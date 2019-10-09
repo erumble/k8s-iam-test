@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/jessevdk/go-flags"
@@ -30,7 +31,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	svc := sts.New(session.New())
+	sess := session.Must(session.NewSession(&aws.Config{
+		CredentialsChainVerboseErrors: aws.Bool(true),
+	}))
+
+	svc := sts.New(sess)
 
 	log.Println("starting server, listening on port " + Opts.Port)
 
