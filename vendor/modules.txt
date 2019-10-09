@@ -1,4 +1,4 @@
-# github.com/aws/aws-sdk-go v1.24.6
+# github.com/aws/aws-sdk-go v1.25.8
 github.com/aws/aws-sdk-go/aws/session
 github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/aws
