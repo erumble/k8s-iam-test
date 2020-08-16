@@ -2,6 +2,8 @@
 
 repo=`git remote get-url origin | sed 's/.*:\(.*\).git/\1/'`
 def_ref=`git rev-parse --abbrev-ref HEAD`
+envs=(docker terraform)
+def_env=${envs[1]}
 
 env_vars ()
 {
@@ -16,6 +18,7 @@ usage ()
   printf "Usage: deploy_to_dev [FLAGS]\n\n"
   printf "Flags:\n"
   printf "  %s %-25s %-35s %s\n" "-r" "<github branch or sha>" "Set branch or commit sha to deploy" "Default: [$def_ref]"
+  printf "  %s %-25s %-35s %s\n" "-e" "<$envs>" "Set environment to deploy to" "Default: $def_env"
   printf "  %s %-25s %-35s %s\n" "-f" "" "Skip deployment confirmation" "Default: false"
   printf "\n"
   env_vars
@@ -23,21 +26,21 @@ usage ()
 
 deploy ()
 {
-  printf "Deploying %s to https://github.com/%s/actions\n\n" $1 $repo
+  printf "Deploying %s to %s - https://github.com/%s/actions\n\n" $1 $2 $repo
 
   curl -XPOST \
   -H "Authorization: token $GH_TOKEN" \
   -H "Accept: application/vnd.github.ant-man-preview+json"  \
   -H "Content-Type: application/json" \
   "https://api.github.com/repos/${repo}/deployments" \
-  --data "{\"ref\": \"${1}\"}"
+  --data "{\"ref\": \"${1}\", \"environment\": \"${2}\"}"
 }
 
 confirm_deploy ()
 {
-  if read -q "answer?Deploy ref $1 of $repo (y/n)? "; then
+  if read -q "answer?Deploy ref $1 of $repo to $2 (y/n)? "; then
     printf "\n"
-    deploy $1
+    deploy $1 $2
   else
     printf "\nCancelling\n"
   fi
@@ -61,6 +64,14 @@ while getopts ":hr:e:f" opt; do
     f)
       force=1
       ;;
+    e)
+      if [[ ${envs[(i)$OPTARG]} -le ${#envs} ]]; then
+        user_env=$OPTARG
+      else
+        printf "Environment must be one of (%s).\n" "${envs[*]}" >&2
+        exit 1
+      fi
+      ;;
     :)
       printf "Option -%s requires an argument.\n" $OPTARG >&2
       exit 1
@@ -79,9 +90,10 @@ if [[ $# -gt 0 ]]; then
 fi
 
 ref=${user_ref:-$def_ref}
+environment=${user_env:-$def_env}
 
 if [[ -z $force ]]; then
-  confirm_deploy $ref
+  confirm_deploy $ref $environment
 else
-  deploy $ref
+  deploy $ref $environment
 fi
